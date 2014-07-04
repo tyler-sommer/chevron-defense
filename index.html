@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Sandcastle Defense mk1</title>
+    <style>
+        .tile {
+            width: 50px;
+            height: 50px;
+            border: 1px solid black;
+            box-sizing: border-box;
+            line-height: 50px;
+            text-align: center;
+            display: inline-block;
+            border-right: 0;
+            border-bottom: none;
+        }
+        
+        .tile:last-child {
+            border-right: 1px solid black;
+        }
+        
+        .row:last-child .tile {
+            border-bottom: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    <script type="text/javascript">
+        /**
+         * A tile on the game board
+         * 
+         * @param height
+         * @constructor
+         */
+        function GameTile(height) {
+            function _makeTile(gameTile) {
+                var el = document.createElement('div');
+                el.className = 'tile';
+
+                el.addEventListener('click', function(e) {
+                    gameTile.height++;
+                    gameTile.render();
+                });
+
+                return el;
+            }
+            
+            this.height = height;
+            this.el = _makeTile(this);
+        }
+        
+        GameTile.prototype.render = function() {
+            this.el.textContent = this.height;
+            
+            return this;
+        };
+
+        /**
+         * A very simplistic wave
+         * 
+         * @param gameBoard
+         * @param maxHeight
+         * @constructor
+         */
+        function Wave(gameBoard, maxHeight) {
+            this.gameBoard = gameBoard;
+            this.maxHeight = maxHeight;
+            
+            var initialX = this.gameBoard.map[0].length - 1;
+            var initialY = Math.round(this.gameBoard.map.length / 2) - 1;
+            this.waves = [];
+            if (initialY % 2 == 0) {
+                this.make(initialX, initialY);
+                initialY++;
+            }
+
+            this.make(initialX, initialY);
+        }
+        
+        Wave.prototype.make = function(x, y) {
+            var tile = this.gameBoard.getTile(x, y);
+            if (!tile) {
+                return;
+            }
+            
+            this.waves.push({
+                x: x,
+                y: y,
+                height: this.maxHeight,
+                tile: tile
+            });
+        };
+        
+        Wave.prototype.move = function(wave, newX, newY) {
+            wave.tile.el.style.backgroundColor = 'transparent';
+            
+            var tile = this.gameBoard.getTile(newX, newY);
+            if (!tile) {
+                this.waves.splice(this.waves.indexOf(wave), 1);
+                
+                return;
+            }
+            
+            wave.x = newX;
+            wave.y = newY;
+            wave.tile = tile;
+        };
+                
+        Wave.prototype.render = function() {
+            this.waves.forEach(function(wave) {
+                wave.tile.el.style.backgroundColor = 'blue';
+            });
+            
+            return this;
+        };
+        
+        Wave.prototype.valid = function() {
+            return this.waves.length > 0;
+        };
+        
+        Wave.prototype.tick = function() {
+            var self = this;
+            var middle = Math.round(self.gameBoard.map.length / 2);
+            this.waves.forEach(function(wave) {
+                var oldX = wave.x;
+                var newX = wave.x - 1;
+                self.move(wave, newX, wave.y);
+                
+                var newY = wave.y >= middle
+                    ? wave.y + 1
+                    : wave.y - 1;
+                
+                self.make(oldX, newY);
+            });
+        };
+
+        /**
+         * A game board
+         * 
+         * @param container
+         * @param width
+         * @param height
+         * @constructor
+         */
+        function GameBoard(container, width, height) {
+            this.container = container;
+            this.wave = null;
+            this.map = []; 
+            
+            for (var i = 0; i < width; i++) {
+                var row = [];
+                for (var j = 0; j < height; j++) {
+                    row.push(new GameTile(0));
+                }
+                this.map.push(row);
+            }
+            
+            var self = this;
+            setInterval(function() {
+                self.tick();
+            }, 1000 / 60);
+        }
+        
+        GameBoard.prototype.getTile = function(x, y) {
+            if (this.map[y] && this.map[y][x]) {
+                return this.map[y][x];
+            }
+            
+            return null;
+        };
+        
+        GameBoard.prototype.render = function() {
+            var container = this.container;
+            container.innerHTML = '';
+            this.map.forEach(function(row) {
+                var rowEl = document.createElement('div');
+                rowEl.className = 'row';
+                row.forEach(function(gameTile) {
+                    rowEl.appendChild(gameTile.render().el);
+                });
+                
+                container.appendChild(rowEl);
+            });
+            
+            if (this.wave) {
+                this.wave.render();
+            }
+        };
+        
+        GameBoard.prototype.tick = function() {
+            console.log('tick');
+            if (this.wave) {
+                this.wave.tick();
+                
+                if (!this.wave.valid()) {
+                    this.wave = null;
+                }
+            } else {
+                if (Math.random() > .5) {
+                    this.wave = new Wave(this, 5);
+                }
+            }
+            
+            this.render();
+        };
+        
+        var board = new GameBoard(document.getElementById('container'), 10, 10);
+        
+        board.render();
+    </script>
+</body>
+</html>
