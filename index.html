@@ -80,6 +80,10 @@
         }
         
         Wave.prototype.make = function(x, y) {
+            function getRandomInt(min, max) {
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+            
             var tile = this.gameBoard.getTile(x, y);
             if (!tile) {
                 return;
@@ -88,7 +92,7 @@
             this.waves.push({
                 x: x,
                 y: y,
-                height: this.maxHeight,
+                height: getRandomInt(1, this.maxHeight),
                 tile: tile
             });
         };
@@ -100,12 +104,29 @@
             if (!tile) {
                 this.waves.splice(this.waves.indexOf(wave), 1);
                 
-                return;
+                return false;
+            }
+            
+            var waveHeight = wave.height;
+            var tileHeight = tile.height;
+            
+            tile.height = tileHeight - waveHeight;
+            if (tile.height < 0) {
+                tile.height = 0;
+            }
+                        
+            wave.height = waveHeight - tileHeight;
+            if (wave.height <= 0) {
+                this.waves.splice(this.waves.indexOf(wave), 1);
+
+                return false;
             }
             
             wave.x = newX;
             wave.y = newY;
             wave.tile = tile;
+            
+            return true;
         };
                 
         Wave.prototype.render = function() {
@@ -126,13 +147,16 @@
             this.waves.forEach(function(wave) {
                 var oldX = wave.x;
                 var newX = wave.x - 1;
-                self.move(wave, newX, wave.y);
+                var result = self.move(wave, newX, wave.y);
+                if (!result) {
+                    return;
+                }
                 
                 var newY = wave.y >= middle
                     ? wave.y + 1
                     : wave.y - 1;
                 
-                self.make(oldX, newY);
+                self.make(oldX, newY, wave.height - 1);
             });
         };
 
@@ -160,7 +184,7 @@
             var self = this;
             setInterval(function() {
                 self.tick();
-            }, 1000 / 60);
+            }, 1000 / 5);
         }
         
         GameBoard.prototype.getTile = function(x, y) {
@@ -198,7 +222,7 @@
                     this.wave = null;
                 }
             } else {
-                if (Math.random() > .5) {
+                if (Math.random() > .75) {
                     this.wave = new Wave(this, 5);
                 }
             }
