@@ -1,10 +1,10 @@
 require(['game/board', 'game/wave'],
   function(Game, Wave) {
-    var width  = 30;
-    var height = 20;
+    var width  = Math.floor(window.innerWidth / 25);
+    var height = Math.floor(window.innerHeight / 25);
     var board = new Game.GameBoard(document.getElementById('container'), width, height);
 
-    var delayBetweenWaves = 1;
+    var delayBetweenWaves = 2;
     var maxWaveHeight     = 5;
     var generator = new Wave.WaveGenerator(board, delayBetweenWaves, maxWaveHeight);
 
