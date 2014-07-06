@@ -52,19 +52,33 @@
                 el.className = 'tile';
 
                 el.addEventListener('click', function(e) {
-                    gameTile.height += 5;
-                    gameTile.render();
+                    gameTile.setHeight(gameTile.getHeight() + 5);
                 });
 
                 return el;
             }
             
-            this.height = height;
+            var _height;
+            this.setHeight = function(height) {
+                if (height < 0) {
+                    height = 0;
+                }
+                
+                _height = height;
+                
+                var hexColor = (height == 0 ? 255 : 225 - _height).toString(16);
+                this.el.style.backgroundColor = "#" + hexColor + hexColor + hexColor;
+            };
+            this.getHeight = function() {
+                return _height;
+            };
+
             this.el = _makeTile(this);
+            this.setHeight(height);
         }
         
         GameTile.prototype.render = function() {
-            this.el.style.backgroundColor = "#"+(255 - this.height).toString(16)+(255 - this.height).toString(16)+(255 - this.height).toString(16);
+            // does nothing for now
             
             return this;
         };
@@ -75,15 +89,17 @@
                 self.tick();
             });
             
+            gameBoard.on('render', function() {
+                self.render();
+            });
+            
             this.gameBoard = gameBoard;
             this.interval  = interval;
             this.maxHeight = maxHeight;
             this.waves     = [];
             
             setInterval(function() {
-                if (self.waves.length <= 0) {
-                    self.waveOnNextTick = true;
-                }
+                self.waveOnNextTick = true;
             }, interval * 1000);
         }
         
@@ -101,10 +117,15 @@
                 this.waveOnNextTick = false;
                 
                 var wave = new Wave(this.gameBoard, 2);
-                wave.render();
-                
+
                 this.waves.push(wave);
             }
+        };
+        
+        WaveGenerator.prototype.render = function() {
+            this.waves.slice(0).forEach(function(wave) {
+                wave.render();
+            });
         };
 
         /**
@@ -120,9 +141,8 @@
             this.waves = [];
             this.toMake = [];
             
-            var rows = gameBoard.map.length;
-            
-            var initialX = this.gameBoard.map[0].length - 1;
+            var rows = this.gameBoard.getHeight();
+            var initialX = this.gameBoard.getWidth() - 1;
 
             for (var i = 0; i < rows; i++) {
                 this.make(initialX, i, this.maxHeight);
@@ -162,15 +182,10 @@
             }
             
             var waveHeight = wave.height;
-            var tileHeight = tile.height;
+            var tileHeight = tile.getHeight();
             
-            tile.height = tileHeight - waveHeight;
-            if (tile.height < 0) {
-                tile.height = 0;
-            }
+            tile.setHeight(tileHeight - waveHeight);
             
-            tile.render();
-                        
             wave.height = waveHeight - tileHeight;
             if (wave.height <= 0) {
                 this.waves.splice(this.waves.indexOf(wave), 1);
@@ -210,8 +225,6 @@
                     this.make(info.x, y, info.height);
                 }
             }
-            
-            this.render();
         };
 
         /**
@@ -224,7 +237,6 @@
          */
         function GameBoard(container, width, height) {
             this.container = container;
-            this.wave = null;
             this.map = []; 
             this.listeners = {};
             
@@ -236,10 +248,16 @@
                 this.map.push(row);
             }
             
-            var self = this;
-            setInterval(function() {
-                self.trigger('tick');
-            }, 1000 / 10);
+            container.innerHTML = '';
+            this.map.forEach(function(row) {
+                var rowEl = document.createElement('div');
+                rowEl.className = 'row';
+                row.forEach(function(gameTile) {
+                    rowEl.appendChild(gameTile.render().el);
+                });
+
+                container.appendChild(rowEl);
+            });
         }
         
         GameBoard.prototype.on = function(name, handler) {
@@ -260,11 +278,11 @@
             });
         };
         
-        GameBoard.prototype.getRowCount = function() {
+        GameBoard.prototype.getHeight = function() {
             return this.map.length;
         };
 
-        GameBoard.prototype.getColumnCount = function() {
+        GameBoard.prototype.getWidth = function() {
             return this.map[0].length;
         };
         
@@ -275,29 +293,43 @@
             
             return null;
         };
-        
-        GameBoard.prototype.render = function() {
-            var container = this.container;
-            container.innerHTML = '';
-            this.map.forEach(function(row) {
-                var rowEl = document.createElement('div');
-                rowEl.className = 'row';
-                row.forEach(function(gameTile) {
-                    rowEl.appendChild(gameTile.render().el);
-                });
-                
-                container.appendChild(rowEl);
-            });
+
+        /**
+         * Start the game
+         * 
+         * Ticks update game logic like positions, scores, etc.
+         * Rendering draws the current state to the viewport
+         */
+        GameBoard.prototype.run = function() {
+            var loops = 0, skipTicks = 1000 / 10,
+                    maxFrameSkip = 10,
+                    nextGameTick = (new Date).getTime();
             
-            if (this.wave) {
-                this.wave.render();
-            }
+            var self = this;
+            var _tick = function() {
+                loops = 0;
+
+                while ((new Date).getTime() > nextGameTick && loops < maxFrameSkip) {
+                    self.trigger('tick');
+                    nextGameTick += skipTicks;
+                    loops++;
+                }
+
+                self.trigger('render');
+            };
+            
+            setInterval(_tick, 0);
         };
         
-        var board = new GameBoard(document.getElementById('container'), 30, 20);
-        var generator = new WaveGenerator(board, 5, 5);
+        var width  = 30;
+        var height = 20;
+        var board = new GameBoard(document.getElementById('container'), width, height);
         
-        board.render();
+        var delayBetweenWaves = 1;
+        var maxWaveHeight     = 5;
+        var generator = new WaveGenerator(board, delayBetweenWaves, maxWaveHeight);
+        
+        board.run();
     </script>
 </body>
 </html>
