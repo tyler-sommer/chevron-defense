@@ -83,6 +83,13 @@
             return this;
         };
         
+        /**
+         * A simple wave generator
+         *  
+         * @param gameBoard
+         * @param interval  Delay in seconds between waves
+         * @param maxHeight The maximum height of a wave
+         */
         function WaveGenerator(gameBoard, interval, maxHeight) {
             var self = this;
             gameBoard.on('tick', function() {
@@ -131,6 +138,8 @@
         /**
          * A very simplistic wave
          * 
+         * A Wave is composed of many tile-sized waves
+         * 
          * @param gameBoard
          * @param maxHeight
          * @constructor
@@ -156,6 +165,13 @@
             }
         }
         
+        /**
+         * Makes one new wave (in a Wave) at the given coordinates
+         * 
+         * @param x      The x coordinate
+         * @param y      The y coordinate
+         * @param height The height of the wave
+         */
         Wave.prototype.make = function(x, y, height) {
             height = height || this.maxHeight;
             var tile = this.gameBoard.getTile(x, y);
@@ -171,6 +187,13 @@
             });
         };
         
+        /**
+         * Moves one wave (in a Wave) and performs the destruction of tile height
+         * 
+         * @param wave A wave object
+         * @param newX The new x coordinate
+         * @param newY The new y coordinate
+         */
         Wave.prototype.move = function(wave, newX, newY) {
             wave.tile.el.className = 'tile';
             
@@ -260,6 +283,12 @@
             });
         }
         
+        /**
+         * Bind a handler to the given event by name
+         * 
+         * @param name    The name of the event
+         * @param handler A Function to be called when the event is triggered
+         */
         GameBoard.prototype.on = function(name, handler) {
             if (!this.listeners[name]) {
                 this.listeners[name] = [];
@@ -268,6 +297,12 @@
             this.listeners[name].push(handler);
         };
         
+        /**
+         * Trigger an event by name
+         * 
+         * @param name The name of the event
+         * @param args Any data to pass to the object
+         */
         GameBoard.prototype.trigger = function(name, args) {
             if (!this.listeners[name]) {
                 return;
