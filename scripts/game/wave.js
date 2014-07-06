@@ -91,10 +91,7 @@ define(function() {
   Wave.prototype.make = function(x, y, height) {
     height = height || this.maxHeight;
     var tile = this.gameBoard.getTile(x, y);
-    if (!tile) {
-      return;
-    }
-
+    
     this.waves.push({
       x: x,
       y: y,
@@ -111,13 +108,23 @@ define(function() {
    * @param newY The new y coordinate
    */
   Wave.prototype.move = function(wave, newX, newY) {
-    wave.tile.el.className = 'tile';
-
-    var tile = this.gameBoard.getTile(newX, newY);
-    if (!tile) {
+    if (wave.tile) {
+      wave.tile.el.className = 'tile';
+    }
+    
+    if (newX < 0) {
       this.waves.splice(this.waves.indexOf(wave), 1);
 
       return false;
+    }
+    
+    var tile = this.gameBoard.getTile(newX, newY);
+    if (!tile) {
+      wave.tile = null;
+      wave.x = newX;
+      wave.y = newY;
+      
+      return true;
     }
 
     var waveHeight = wave.height;
@@ -141,7 +148,9 @@ define(function() {
 
   Wave.prototype.render = function() {
     this.waves.slice(0).forEach(function(wave) {
-      wave.tile.el.className = 'tile wave';
+      if (wave.tile) {
+        wave.tile.el.className = 'tile wave';
+      }
     });
 
     return this;
