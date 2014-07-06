@@ -69,15 +69,15 @@ define(function() {
     var rows = this.gameBoard.getHeight();
     var initialX = this.gameBoard.getWidth() - 1;
 
-    for (var i = 0; i < rows; i++) {
-      this.make(initialX, i, this.maxHeight);
-    }
+    var yOffset = -1 * Math.floor(Math.random() * 6);
 
-    for (var currentHeight = this.maxHeight - 1; currentHeight > 0; currentHeight--) {
-      this.toMake.push({
-        x:      initialX,
-        height: currentHeight
-      });
+    var func = Math.random() >= .5 
+      ? function(i) { return Math.sin(i * .75) } 
+      : function(i) { return Math.cos(i * .75) };
+    
+    for (var i = 0; i < rows; i++) {
+      var waveyX = (initialX + 5) - Math.round(func((i + yOffset) / 2) * 2);
+      this.make(waveyX, i, this.maxHeight);
     }
   }
 
