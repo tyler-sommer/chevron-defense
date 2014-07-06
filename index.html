@@ -39,332 +39,335 @@
 </head>
 <body>
     <div id="container"></div>
-    <script type="text/javascript">
-        /**
-         * A tile on the game board
-         * 
-         * @param height
-         * @constructor
-         */
-        function GameTile(height) {
-            function _makeTile(gameTile) {
-                var el = document.createElement('div');
-                el.className = 'tile';
+    
+<script type="text/javascript">
+(function(document) {
+    /**
+     * A tile on the game board
+     * 
+     * @param height
+     * @constructor
+     */
+    function GameTile(height) {
+        function _makeTile(gameTile) {
+            var el = document.createElement('div');
+            el.className = 'tile';
 
-                el.addEventListener('click', function(e) {
-                    gameTile.setHeight(gameTile.getHeight() + 5);
-                });
+            el.addEventListener('click', function(e) {
+                gameTile.setHeight(gameTile.getHeight() + 5);
+            });
 
-                return el;
-            }
-            
-            var _height;
-            this.setHeight = function(height) {
-                if (height < 0) {
-                    height = 0;
-                }
-                
-                _height = height;
-                
-                var hexColor = (height == 0 ? 255 : 225 - _height).toString(16);
-                this.el.style.backgroundColor = "#" + hexColor + hexColor + hexColor;
-            };
-            this.getHeight = function() {
-                return _height;
-            };
-
-            this.el = _makeTile(this);
-            this.setHeight(height);
+            return el;
         }
         
-        GameTile.prototype.render = function() {
-            // does nothing for now
+        var _height;
+        this.setHeight = function(height) {
+            if (height < 0) {
+                height = 0;
+            }
             
-            return this;
+            _height = height;
+            
+            var hexColor = (height == 0 ? 255 : 225 - _height).toString(16);
+            this.el.style.backgroundColor = "#" + hexColor + hexColor + hexColor;
         };
+        this.getHeight = function() {
+            return _height;
+        };
+
+        this.el = _makeTile(this);
+        this.setHeight(height);
+    }
+    
+    GameTile.prototype.render = function() {
+        // does nothing for now
         
-        /**
-         * A simple wave generator
-         *  
-         * @param gameBoard
-         * @param interval  Delay in seconds between waves
-         * @param maxHeight The maximum height of a wave
-         */
-        function WaveGenerator(gameBoard, interval, maxHeight) {
-            var self = this;
-            gameBoard.on('tick', function() {
-                self.tick();
-            });
+        return this;
+    };
+    
+    /**
+     * A simple wave generator
+     *  
+     * @param gameBoard
+     * @param interval  Delay in seconds between waves
+     * @param maxHeight The maximum height of a wave
+     */
+    function WaveGenerator(gameBoard, interval, maxHeight) {
+        var self = this;
+        gameBoard.on('tick', function() {
+            self.tick();
+        });
+        
+        gameBoard.on('render', function() {
+            self.render();
+        });
+        
+        this.gameBoard = gameBoard;
+        this.interval  = interval;
+        this.maxHeight = maxHeight;
+        this.waves     = [];
+        
+        setInterval(function() {
+            self.waveOnNextTick = true;
+        }, interval * 1000);
+    }
+    
+    WaveGenerator.prototype.tick = function() {
+        var self = this;
+        this.waves.slice(0).forEach(function(wave) {
+            wave.tick();
+
+            if (!wave.valid()) {
+                self.waves.splice(self.waves.indexOf(wave), 1);
+            }
+        });
+        
+        if (this.waveOnNextTick) {
+            this.waveOnNextTick = false;
             
-            gameBoard.on('render', function() {
-                self.render();
-            });
-            
-            this.gameBoard = gameBoard;
-            this.interval  = interval;
-            this.maxHeight = maxHeight;
-            this.waves     = [];
-            
-            setInterval(function() {
-                self.waveOnNextTick = true;
-            }, interval * 1000);
+            var wave = new Wave(this.gameBoard, 2);
+
+            this.waves.push(wave);
         }
+    };
+    
+    WaveGenerator.prototype.render = function() {
+        this.waves.slice(0).forEach(function(wave) {
+            wave.render();
+        });
+    };
+
+    /**
+     * A very simplistic wave
+     * 
+     * A Wave is composed of many tile-sized waves
+     * 
+     * @param gameBoard
+     * @param maxHeight
+     * @constructor
+     */
+    function Wave(gameBoard, maxHeight) {
+        this.gameBoard = gameBoard;
+        this.maxHeight = maxHeight;
+        this.waves = [];
+        this.toMake = [];
         
-        WaveGenerator.prototype.tick = function() {
-            var self = this;
-            this.waves.slice(0).forEach(function(wave) {
-                wave.tick();
+        var rows = this.gameBoard.getHeight();
+        var initialX = this.gameBoard.getWidth() - 1;
 
-                if (!wave.valid()) {
-                    self.waves.splice(self.waves.indexOf(wave), 1);
-                }
-            });
-            
-            if (this.waveOnNextTick) {
-                this.waveOnNextTick = false;
-                
-                var wave = new Wave(this.gameBoard, 2);
-
-                this.waves.push(wave);
-            }
-        };
+        for (var i = 0; i < rows; i++) {
+            this.make(initialX, i, this.maxHeight);
+        } 
         
-        WaveGenerator.prototype.render = function() {
-            this.waves.slice(0).forEach(function(wave) {
-                wave.render();
-            });
-        };
-
-        /**
-         * A very simplistic wave
-         * 
-         * A Wave is composed of many tile-sized waves
-         * 
-         * @param gameBoard
-         * @param maxHeight
-         * @constructor
-         */
-        function Wave(gameBoard, maxHeight) {
-            this.gameBoard = gameBoard;
-            this.maxHeight = maxHeight;
-            this.waves = [];
-            this.toMake = [];
-            
-            var rows = this.gameBoard.getHeight();
-            var initialX = this.gameBoard.getWidth() - 1;
-
-            for (var i = 0; i < rows; i++) {
-                this.make(initialX, i, this.maxHeight);
-            } 
-            
-            for (var currentHeight = this.maxHeight - 1; currentHeight > 0; currentHeight--) {
-                this.toMake.push({
-                    x:      initialX,
-                    height: currentHeight
-                });
-            }
-        }
-        
-        /**
-         * Makes one new wave (in a Wave) at the given coordinates
-         * 
-         * @param x      The x coordinate
-         * @param y      The y coordinate
-         * @param height The height of the wave
-         */
-        Wave.prototype.make = function(x, y, height) {
-            height = height || this.maxHeight;
-            var tile = this.gameBoard.getTile(x, y);
-            if (!tile) {
-                return;
-            }
-            
-            this.waves.push({
-                x: x,
-                y: y,
-                height: height,
-                tile: tile
-            });
-        };
-        
-        /**
-         * Moves one wave (in a Wave) and performs the destruction of tile height
-         * 
-         * @param wave A wave object
-         * @param newX The new x coordinate
-         * @param newY The new y coordinate
-         */
-        Wave.prototype.move = function(wave, newX, newY) {
-            wave.tile.el.className = 'tile';
-            
-            var tile = this.gameBoard.getTile(newX, newY);
-            if (!tile) {
-                this.waves.splice(this.waves.indexOf(wave), 1);
-                
-                return false;
-            }
-            
-            var waveHeight = wave.height;
-            var tileHeight = tile.getHeight();
-            
-            tile.setHeight(tileHeight - waveHeight);
-            
-            wave.height = waveHeight - tileHeight;
-            if (wave.height <= 0) {
-                this.waves.splice(this.waves.indexOf(wave), 1);
-
-                return false;
-            }
-            
-            wave.x = newX;
-            wave.y = newY;
-            wave.tile = tile;
-            
-            return true;
-        };
-                
-        Wave.prototype.render = function() {
-            this.waves.slice(0).forEach(function(wave) {
-                wave.tile.el.className = 'tile wave';
-            });
-            
-            return this;
-        };
-        
-        Wave.prototype.valid = function() {
-            return this.waves.length > 0;
-        };
-        
-        Wave.prototype.tick = function() {
-            var self = this;
-            var rows = this.gameBoard.map.length;
-            this.waves.slice(0).forEach(function(wave) {
-                self.move(wave, wave.x - 1, wave.y);
-            });
-            
-            if (this.toMake.length > 0) {
-                var info = this.toMake.shift();
-                for (var y = 0; y < rows; y++) {
-                    this.make(info.x, y, info.height);
-                }
-            }
-        };
-
-        /**
-         * A game board
-         * 
-         * @param container
-         * @param width
-         * @param height
-         * @constructor
-         */
-        function GameBoard(container, width, height) {
-            this.container = container;
-            this.map = []; 
-            this.listeners = {};
-            
-            for (var i = 0; i < height; i++) {
-                var row = [];
-                for (var j = 0; j < width; j++) {
-                    row.push(new GameTile(0));
-                }
-                this.map.push(row);
-            }
-            
-            container.innerHTML = '';
-            this.map.forEach(function(row) {
-                var rowEl = document.createElement('div');
-                rowEl.className = 'row';
-                row.forEach(function(gameTile) {
-                    rowEl.appendChild(gameTile.render().el);
-                });
-
-                container.appendChild(rowEl);
+        for (var currentHeight = this.maxHeight - 1; currentHeight > 0; currentHeight--) {
+            this.toMake.push({
+                x:      initialX,
+                height: currentHeight
             });
         }
+    }
+    
+    /**
+     * Makes one new wave (in a Wave) at the given coordinates
+     * 
+     * @param x      The x coordinate
+     * @param y      The y coordinate
+     * @param height The height of the wave
+     */
+    Wave.prototype.make = function(x, y, height) {
+        height = height || this.maxHeight;
+        var tile = this.gameBoard.getTile(x, y);
+        if (!tile) {
+            return;
+        }
         
-        /**
-         * Bind a handler to the given event by name
-         * 
-         * @param name    The name of the event
-         * @param handler A Function to be called when the event is triggered
-         */
-        GameBoard.prototype.on = function(name, handler) {
-            if (!this.listeners[name]) {
-                this.listeners[name] = [];
-            }
+        this.waves.push({
+            x: x,
+            y: y,
+            height: height,
+            tile: tile
+        });
+    };
+    
+    /**
+     * Moves one wave (in a Wave) and performs the destruction of tile height
+     * 
+     * @param wave A wave object
+     * @param newX The new x coordinate
+     * @param newY The new y coordinate
+     */
+    Wave.prototype.move = function(wave, newX, newY) {
+        wave.tile.el.className = 'tile';
+        
+        var tile = this.gameBoard.getTile(newX, newY);
+        if (!tile) {
+            this.waves.splice(this.waves.indexOf(wave), 1);
             
-            this.listeners[name].push(handler);
-        };
+            return false;
+        }
         
-        /**
-         * Trigger an event by name
-         * 
-         * @param name The name of the event
-         * @param args Any data to pass to the object
-         */
-        GameBoard.prototype.trigger = function(name, args) {
-            if (!this.listeners[name]) {
-                return;
-            }
+        var waveHeight = wave.height;
+        var tileHeight = tile.getHeight();
+        
+        tile.setHeight(tileHeight - waveHeight);
+        
+        wave.height = waveHeight - tileHeight;
+        if (wave.height <= 0) {
+            this.waves.splice(this.waves.indexOf(wave), 1);
 
-            this.listeners[name].slice(0).forEach(function(handler) {
-                handler(args);
+            return false;
+        }
+        
+        wave.x = newX;
+        wave.y = newY;
+        wave.tile = tile;
+        
+        return true;
+    };
+            
+    Wave.prototype.render = function() {
+        this.waves.slice(0).forEach(function(wave) {
+            wave.tile.el.className = 'tile wave';
+        });
+        
+        return this;
+    };
+    
+    Wave.prototype.valid = function() {
+        return this.waves.length > 0;
+    };
+    
+    Wave.prototype.tick = function() {
+        var self = this;
+        var rows = this.gameBoard.map.length;
+        this.waves.slice(0).forEach(function(wave) {
+            self.move(wave, wave.x - 1, wave.y);
+        });
+        
+        if (this.toMake.length > 0) {
+            var info = this.toMake.shift();
+            for (var y = 0; y < rows; y++) {
+                this.make(info.x, y, info.height);
+            }
+        }
+    };
+
+    /**
+     * A game board
+     * 
+     * @param container
+     * @param width
+     * @param height
+     * @constructor
+     */
+    function GameBoard(container, width, height) {
+        this.container = container;
+        this.map = []; 
+        this.listeners = {};
+        
+        for (var i = 0; i < height; i++) {
+            var row = [];
+            for (var j = 0; j < width; j++) {
+                row.push(new GameTile(0));
+            }
+            this.map.push(row);
+        }
+        
+        container.innerHTML = '';
+        this.map.forEach(function(row) {
+            var rowEl = document.createElement('div');
+            rowEl.className = 'row';
+            row.forEach(function(gameTile) {
+                rowEl.appendChild(gameTile.render().el);
             });
-        };
-        
-        GameBoard.prototype.getHeight = function() {
-            return this.map.length;
-        };
 
-        GameBoard.prototype.getWidth = function() {
-            return this.map[0].length;
-        };
+            container.appendChild(rowEl);
+        });
+    }
+    
+    /**
+     * Bind a handler to the given event by name
+     * 
+     * @param name    The name of the event
+     * @param handler A Function to be called when the event is triggered
+     */
+    GameBoard.prototype.on = function(name, handler) {
+        if (!this.listeners[name]) {
+            this.listeners[name] = [];
+        }
         
-        GameBoard.prototype.getTile = function(x, y) {
-            if (this.map[y] && this.map[y][x]) {
-                return this.map[y][x];
+        this.listeners[name].push(handler);
+    };
+    
+    /**
+     * Trigger an event by name
+     * 
+     * @param name The name of the event
+     * @param args Any data to pass to the object
+     */
+    GameBoard.prototype.trigger = function(name, args) {
+        if (!this.listeners[name]) {
+            return;
+        }
+
+        this.listeners[name].slice(0).forEach(function(handler) {
+            handler(args);
+        });
+    };
+    
+    GameBoard.prototype.getHeight = function() {
+        return this.map.length;
+    };
+
+    GameBoard.prototype.getWidth = function() {
+        return this.map[0].length;
+    };
+    
+    GameBoard.prototype.getTile = function(x, y) {
+        if (this.map[y] && this.map[y][x]) {
+            return this.map[y][x];
+        }
+        
+        return null;
+    };
+
+    /**
+     * Start the game
+     * 
+     * Ticks update game logic like positions, scores, etc.
+     * Rendering draws the current state to the viewport
+     */
+    GameBoard.prototype.run = function() {
+        var loops = 0, skipTicks = 1000 / 10,
+                maxFrameSkip = 10,
+                nextGameTick = (new Date).getTime();
+        
+        var self = this;
+        var _tick = function() {
+            loops = 0;
+
+            while ((new Date).getTime() > nextGameTick && loops < maxFrameSkip) {
+                self.trigger('tick');
+                nextGameTick += skipTicks;
+                loops++;
             }
-            
-            return null;
-        };
 
-        /**
-         * Start the game
-         * 
-         * Ticks update game logic like positions, scores, etc.
-         * Rendering draws the current state to the viewport
-         */
-        GameBoard.prototype.run = function() {
-            var loops = 0, skipTicks = 1000 / 10,
-                    maxFrameSkip = 10,
-                    nextGameTick = (new Date).getTime();
-            
-            var self = this;
-            var _tick = function() {
-                loops = 0;
-
-                while ((new Date).getTime() > nextGameTick && loops < maxFrameSkip) {
-                    self.trigger('tick');
-                    nextGameTick += skipTicks;
-                    loops++;
-                }
-
-                self.trigger('render');
-            };
-            
-            setInterval(_tick, 0);
+            self.trigger('render');
         };
         
-        var width  = 30;
-        var height = 20;
-        var board = new GameBoard(document.getElementById('container'), width, height);
-        
-        var delayBetweenWaves = 1;
-        var maxWaveHeight     = 5;
-        var generator = new WaveGenerator(board, delayBetweenWaves, maxWaveHeight);
-        
-        board.run();
-    </script>
+        setInterval(_tick, 0);
+    };
+    
+    var width  = 30;
+    var height = 20;
+    var board = new GameBoard(document.getElementById('container'), width, height);
+    
+    var delayBetweenWaves = 1;
+    var maxWaveHeight     = 5;
+    var generator = new WaveGenerator(board, delayBetweenWaves, maxWaveHeight);
+    
+    board.run();
+})(this.document);
+</script>
 </body>
 </html>
