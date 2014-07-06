@@ -1,0 +1,31 @@
+#container {
+  border: 1px solid silver;
+  display: inline-block;
+}
+
+.row {
+  height: 25px;
+  margin: 0;
+  padding: 0;
+  clear: both;
+}
+
+.tile {
+  width: 25px;
+  height: 25px;
+  box-sizing: border-box;
+  text-align: center;
+  display: inline-block;
+  border: 0;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}
+
+.tile.wave {
+  background-color: blue !important;
+}
+
+.tile:hover {
+  background-color: #eee !important;
+}
