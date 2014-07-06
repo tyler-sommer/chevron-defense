@@ -1,27 +1,39 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<title>Sandcastle Defense mk1</title>
-    <style>
+    <meta charset="utf-8" />
+    <title>Sandcastle Defense mk1</title>
+    <style type="text/css">
+        #container {
+            border: 1px solid silver;
+            display: inline-block;
+        }
+
+        .row {
+            height: 25px;
+            margin: 0;
+            padding: 0;
+            clear: both;
+        }
+        
         .tile {
-            width: 50px;
-            height: 50px;
-            border: 1px solid black;
+            width: 25px;
+            height: 25px;
             box-sizing: border-box;
-            line-height: 50px;
             text-align: center;
             display: inline-block;
-            border-right: 0;
-            border-bottom: none;
+            border: 0;
+            cursor: pointer;
+            margin: 0;
+            padding: 0;
         }
         
-        .tile:last-child {
-            border-right: 1px solid black;
+        .tile.wave {
+            background-color: blue !important;
         }
         
-        .row:last-child .tile {
-            border-bottom: 1px solid black;
+        .tile:hover {
+            background-color: #eee !important;
         }
     </style>
 </head>
@@ -52,9 +64,47 @@
         }
         
         GameTile.prototype.render = function() {
-            this.el.textContent = this.height;
+            this.el.style.backgroundColor = "#"+(255 - this.height).toString(16)+(255 - this.height).toString(16)+(255 - this.height).toString(16);
             
             return this;
+        };
+        
+        function WaveGenerator(gameBoard, interval, maxHeight) {
+            var self = this;
+            gameBoard.on('tick', function() {
+                self.tick();
+            });
+            
+            this.gameBoard = gameBoard;
+            this.interval  = interval;
+            this.maxHeight = maxHeight;
+            this.waves     = [];
+            
+            setInterval(function() {
+                if (self.waves.length <= 0) {
+                    self.waveOnNextTick = true;
+                }
+            }, interval * 1000);
+        }
+        
+        WaveGenerator.prototype.tick = function() {
+            var self = this;
+            this.waves.slice(0).forEach(function(wave) {
+                wave.tick();
+
+                if (!wave.valid()) {
+                    self.waves.splice(self.waves.indexOf(wave), 1);
+                }
+            });
+            
+            if (this.waveOnNextTick) {
+                this.waveOnNextTick = false;
+                
+                var wave = new Wave(this.gameBoard, 2);
+                wave.render();
+                
+                this.waves.push(wave);
+            }
         };
 
         /**
@@ -102,7 +152,7 @@
         };
         
         Wave.prototype.move = function(wave, newX, newY) {
-            wave.tile.el.style.backgroundColor = 'transparent';
+            wave.tile.el.className = 'tile';
             
             var tile = this.gameBoard.getTile(newX, newY);
             if (!tile) {
@@ -118,6 +168,8 @@
             if (tile.height < 0) {
                 tile.height = 0;
             }
+            
+            tile.render();
                         
             wave.height = waveHeight - tileHeight;
             if (wave.height <= 0) {
@@ -135,7 +187,7 @@
                 
         Wave.prototype.render = function() {
             this.waves.slice(0).forEach(function(wave) {
-                wave.tile.el.style.backgroundColor = 'blue';
+                wave.tile.el.className = 'tile wave';
             });
             
             return this;
@@ -158,6 +210,8 @@
                     this.make(info.x, y, info.height);
                 }
             }
+            
+            this.render();
         };
 
         /**
@@ -172,10 +226,11 @@
             this.container = container;
             this.wave = null;
             this.map = []; 
+            this.listeners = {};
             
-            for (var i = 0; i < width; i++) {
+            for (var i = 0; i < height; i++) {
                 var row = [];
-                for (var j = 0; j < height; j++) {
+                for (var j = 0; j < width; j++) {
                     row.push(new GameTile(0));
                 }
                 this.map.push(row);
@@ -183,9 +238,35 @@
             
             var self = this;
             setInterval(function() {
-                self.tick();
-            }, 1000 / 5);
+                self.trigger('tick');
+            }, 1000 / 10);
         }
+        
+        GameBoard.prototype.on = function(name, handler) {
+            if (!this.listeners[name]) {
+                this.listeners[name] = [];
+            }
+            
+            this.listeners[name].push(handler);
+        };
+        
+        GameBoard.prototype.trigger = function(name, args) {
+            if (!this.listeners[name]) {
+                return;
+            }
+
+            this.listeners[name].slice(0).forEach(function(handler) {
+                handler(args);
+            });
+        };
+        
+        GameBoard.prototype.getRowCount = function() {
+            return this.map.length;
+        };
+
+        GameBoard.prototype.getColumnCount = function() {
+            return this.map[0].length;
+        };
         
         GameBoard.prototype.getTile = function(x, y) {
             if (this.map[y] && this.map[y][x]) {
@@ -213,23 +294,8 @@
             }
         };
         
-        GameBoard.prototype.tick = function() {
-            if (this.wave) {
-                this.wave.tick();
-                
-                if (!this.wave.valid()) {
-                    this.wave = null;
-                }
-            } else {
-                if (Math.random() > .75) {
-                    this.wave = new Wave(this, 2);
-                }
-            }
-            
-            this.render();
-        };
-        
-        var board = new GameBoard(document.getElementById('container'), 10, 10);
+        var board = new GameBoard(document.getElementById('container'), 30, 20);
+        var generator = new WaveGenerator(board, 5, 5);
         
         board.render();
     </script>
