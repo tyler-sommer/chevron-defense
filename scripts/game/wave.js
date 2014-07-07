@@ -21,9 +21,13 @@ define(function() {
     this.maxHeight = maxHeight;
     this.waves     = [];
 
-    setInterval(function() {
+    function _timeout() {
       self.waveOnNextTick = true;
-    }, interval * 1000);
+
+      setTimeout(_timeout, ((Math.random() * interval) + .25) * 1000);
+    }
+    
+    setTimeout(_timeout, interval * 1000);
   }
 
   WaveGenerator.prototype.tick = function() {
@@ -39,7 +43,7 @@ define(function() {
     if (this.waveOnNextTick) {
       this.waveOnNextTick = false;
 
-      var wave = new Wave(this.gameBoard, 2);
+      var wave = new Wave(this.gameBoard, Math.floor(Math.random() * this.maxHeight) + 1);
 
       this.waves.push(wave);
     }
