@@ -30,6 +30,25 @@ define(function() {
 
       container.appendChild(rowEl);
     });
+
+    function _mouseMove(e) {
+      var x = e.pageX,
+        y = e.pageY;
+
+      var el = document.elementFromPoint(x, y);
+
+      if (el.tile) {
+        el.tile.setHeight(el.tile.getHeight() + 5);
+      }
+    }
+    
+    container.addEventListener('mousedown', function(e) {
+      container.addEventListener('mousemove', _mouseMove);
+    });
+
+    container.addEventListener('mouseup', function(e) {
+      container.removeEventListener('mousemove', _mouseMove);
+    });
   }
 
   /**
@@ -115,10 +134,7 @@ define(function() {
     function _makeTile(gameTile) {
       var el = document.createElement('div');
       el.className = 'tile';
-
-      el.addEventListener('click', function(e) {
-        gameTile.setHeight(gameTile.getHeight() + 5);
-      });
+      el.tile      = gameTile;
 
       return el;
     }
