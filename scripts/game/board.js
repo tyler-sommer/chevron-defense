@@ -147,8 +147,10 @@ define(function() {
 
       _height = height;
 
-      var hexColor = (height == 0 ? 255 : 225 - _height).toString(16);
-      this.el.style.backgroundColor = "#" + hexColor + hexColor + hexColor;
+      var redHex = (height == 0 ? 253 : 253 - _height).toString(16);
+      var greenHex = (height == 0 ? 245 : 245 - _height).toString(16);
+      var blueHex = (height == 0 ? 239 : 239 - _height).toString(16);
+      this.el.style.backgroundColor = "#" + redHex + greenHex + blueHex;
     };
     this.getHeight = function() {
       return _height;
