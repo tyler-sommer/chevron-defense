@@ -118,7 +118,9 @@ define(function() {
         loops++;
       }
 
-      self.trigger('render');
+      if (loops > 0) {
+        self.trigger('render');
+      }
     };
 
     setInterval(_tick, 0);
