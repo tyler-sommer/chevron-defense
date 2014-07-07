@@ -104,7 +104,7 @@ define(function() {
    * Rendering draws the current state to the viewport
    */
   GameBoard.prototype.run = function() {
-    var loops = 0, skipTicks = 1000 / 10,
+    var loops = 0, skipTicks = 1000 / 60,
       maxFrameSkip = 10,
       nextGameTick = (new Date).getTime();
 
