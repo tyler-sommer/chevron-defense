@@ -76,8 +76,8 @@ define(function() {
     var yOffset = -1 * Math.floor(Math.random() * 6);
 
     var func = Math.random() >= .5 
-      ? function(i) { return Math.sin(i * .75) } 
-      : function(i) { return Math.cos(i * .75) };
+      ? function(i) { return Math.sin(i * .80) } 
+      : function(i) { return Math.cos(i * .65) };
     
     for (var i = 0; i < rows; i++) {
       var waveyX = (initialX + 5) - Math.round(func((i + yOffset) / 2) * 2);
